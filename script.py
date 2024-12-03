@@ -10,6 +10,13 @@ from total_flows import get_total_flows
 from flow_diagram import generate_flow_diagram
 from html_template import HTMLTemplate
 
+def print_date_range(df):
+    """Print the first and last dates in the transaction data."""
+    start_date = df['Date'].min().strftime('%Y-%m-%d')
+    end_date = df['Date'].max().strftime('%Y-%m-%d')
+    print(f"\nTransaction Date Range: {start_date} to {end_date}")
+    return start_date, end_date
+
 def group_similar_companies(companies):
     groups = {}
     processed = set()
@@ -46,6 +53,9 @@ def analyze_transactions(df, output_format='text'):
     
     # Convert date to datetime
     df['Date'] = pd.to_datetime(df['Date'])
+
+    # Print date range before analysis
+    start_date, end_date = print_date_range(df)
 
     # Normalize company names
     tqdm.pandas(desc="Normalizing company names")
@@ -87,6 +97,12 @@ def analyze_transactions(df, output_format='text'):
     if output_format == 'html':
         template = HTMLTemplate()
         
+        # Add date range information
+        date_range_info = template.create_card(
+            title="Analysis Period",
+            content=f"<p>Transactions from {start_date} to {end_date}</p>"
+        )
+        
         # Format the spending data for the table
         headers = ['Company', 'Total Amount', 'Monthly Average', 'Yearly Average', 'Transaction Count']
         rows = []
@@ -114,6 +130,7 @@ def analyze_transactions(df, output_format='text'):
         # Combine all sections
         content = f"""
             <h1 class="text-2xl font-semibold text-center mb-6">Transaction Analysis</h1>
+            {date_range_info}
             {spending_table}
             {flows_section}
             {flow_diagram}
@@ -121,6 +138,7 @@ def analyze_transactions(df, output_format='text'):
         
         return template.render(content)
     else:
+        print(f"\nAnalysis Period: {start_date} to {end_date}\n")
         return spending.to_string(float_format=lambda x: '${:,.2f}'.format(x) if isinstance(x, float) else x)
 
 def main():
